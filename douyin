@@ -1,0 +1,53 @@
+#coding:utf-8
+import requests
+import json
+import csv
+import time
+
+# 去重后的id列表
+uidList=[['73888615414']]
+# 所有信息
+allList=[]
+# 跑过的uid列表
+runList=[]
+payload={'aid':'1128','count':'5000','max_time':'1533104541633','user_id':'81744784362'}
+followerUrl= 'https://aweme.snssdk.com/aweme/v1/user/follower/list/'
+followingUrl='https://aweme.snssdk.com/aweme/v1/user/following/list/'
+headers={'user-agent': 'Aweme/1.8.0 (iPhone; iOS 11.2.2; Scale/3.00)'}
+# 模拟请求一下,看看结果
+r = requests.get(followingUrl, headers=headers,params=payload)
+r.encoding='utf-8'
+jr=json.loads(r.text)
+
+def getList(uidList):
+    if(len(uidList)>=9000):
+        print('9000了..退出递归')
+        return False
+    for uid in uidList:
+            if(uid[0] not in runList):
+                if(len(uidList)>=9000):
+                    return
+                payload['user_id']=str(uid[0])
+                runList.append(uid[0])
+                r = requests.get(followerUrl, headers=headers, params=payload)
+                r.encoding = 'utf-8'
+                j = json.loads(r.text)['followers']
+                print('当前uid总数:', len(uidList),'当前用来跑的uid:',uid, 'uid列表:',uidList)
+                time.sleep(1)
+                for item in j:
+                    if (len(uidList) >= 9000):
+                        return
+                    if([item['uid']] not in uidList):
+                        uidList.append([item['uid']])
+                        allList.append(item)
+                getList(uidList)
+getList(uidList)
+print(len(uidList),uidList)
+with open('userList1.csv','w',newline='',encoding='utf-8-sig') as csvfile:
+    writer=csv.writer(csvfile)
+    print('正在写入csv')
+    writer.writerow(['uid'])
+    for i in uidList:
+        writer.writerow((i))
+
+print(r.encoding,allList)
